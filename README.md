@@ -1,2 +1,2 @@
-[Click here to visit my portfolio](kinzozi.github.io)
+[Click here to visit my portfolio](https://kinzozi.github.io)
 
