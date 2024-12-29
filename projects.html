@@ -50,24 +50,20 @@
         select {
             padding: 10px;
             font-size: 16px;
-            width: 100%;
-            border-radius: 5px;
             border: 1px solid #ddd;
+            border-radius: 5px;
             background: white;
             cursor: pointer;
-            appearance: none;
-            -webkit-appearance: none;
-            -moz-appearance: none;
-            background-image: url('data:image/svg+xml;utf8,<svg fill="black" height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg"><path d="M7 10l5 5 5-5z"/></svg>');
-            background-repeat: no-repeat;
-            background-position: right 10px center;
-            background-size: 20px;
-            padding-right: 30px;
+            width: 100%;
         }
-        select:focus {
-            outline: none;
+        select:hover {
             border-color: #007bff;
-            box-shadow: 0 0 0 2px rgba(0,123,255,0.25);
+        }
+        #file-selector {
+            display: none;
+        }
+        #file-selector.visible {
+            display: block;
         }
         #editor-container {
             height: 600px;
@@ -93,12 +89,6 @@
             height: 600px;
             margin-top: 20px;
         }
-        #file-selector {
-            display: none;
-        }
-        #file-selector.visible {
-            display: block;
-        }
     </style>
 </head>
 <body>
@@ -107,7 +97,7 @@
         <h1>My Development Projects</h1>
         <div class="project-selector">
             <select id="project-select">
-                <option value="">Select a Project</option>
+                <option value="">Select a project</option>
                 <option value="oxidian">Oxidian SecureSearch</option>
                 <option value="gateway">Gateway LLM API</option>
                 <option value="selena">Selena Oracle</option>
@@ -116,7 +106,7 @@
                 <option value="treadstone">Treadstone</option>
             </select>
             <select id="file-selector">
-                <option value="">Select a File</option>
+                <option value="">Select a file</option>
             </select>
         </div>
         <div class="editor-wrapper">
@@ -129,139 +119,38 @@
         let editor = null;
         let editorLoaded = false;
 
-        const projectFiles = {
-            oxidian: {
-                'main.rs': `use std::collections::HashMap;
-
-// Oxidian SecureSearch Implementation
-pub struct SecureIndex {
-    index: HashMap<String, Vec<u64>>,
-}
-
-impl SecureIndex {
-    pub fn new() -> Self {
-        SecureIndex {
-            index: HashMap::new(),
-        }
-    }
-
-    pub fn add_document(&mut self, doc_id: u64, content: &str) {
-        // Implementation for secure document indexing
-    }
-}`,
-                'search.rs': `// Search implementation with privacy-preserving features
-pub fn search(query: &str, index: &SecureIndex) -> Vec<u64> {
-    // Secure search implementation
-    vec![]
-}`
-            },
-            gateway: {
-                'api.js': `// Gateway LLM API Service
-class LLMGateway {
-    constructor() {
-        this.models = new Map();
-        this.initialize();
-    }
-
-    async initialize() {
-        // Initialize available models
-        console.log("Initializing LLM Gateway...");
-    }
-}`,
-                'router.js': `// API Router Configuration
-const express = require('express');
-const router = express.Router();
-
-router.post('/completion', async (req, res) => {
-    // Handle completion requests
-});`
-            },
-            selena: {
-                'oracle.py': `class SelenaOracle:
-    def __init__(self):
-        self.knowledge_base = {}
-        
-    def predict(self, data):
-        """
-        Make predictions using advanced ML models
-        """
-        return self.process_prediction(data)`,
-                'models.py': `import tensorflow as tf
-
-def build_oracle_model():
-    """
-    Builds the core Selena prediction model
-    """
-    model = tf.keras.Sequential([
-        tf.keras.layers.Dense(128, activation='relu'),
-        tf.keras.layers.Dropout(0.2),
-        tf.keras.layers.Dense(64, activation='relu'),
-        tf.keras.layers.Dense(1, activation='sigmoid')
-    ])
-    return model`
-            },
-            mcp: {
-                'server.ts': `import { Server } from '@modelcontextprotocol/sdk';
-
-class MCPServer {
-    private server: Server;
-    
-    constructor() {
-        this.server = new Server({
-            name: 'example-server',
-            version: '1.0.0'
-        });
-    }
-}`,
-                'tools.ts': `export interface Tool {
-    name: string;
-    description: string;
-    execute(params: any): Promise<any>;
-}`
-            },
-            docutool: {
-                'parser.js': `class DocumentParser {
-    constructor() {
-        this.supportedFormats = ['pdf', 'docx', 'md'];
-    }
-
-    async parse(file) {
-        // Implementation for document parsing
-    }
-}`,
-                'converter.js': `// Document format converter
-class FormatConverter {
-    static async toMarkdown(content) {
-        // Convert to markdown
-    }
-}`
-            },
-            treadstone: {
-                'core.py': `class TreadstoneCore:
-    """
-    Core implementation of the Treadstone system
-    """
-    def __init__(self):
-        self.modules = {}
-        self.initialize_system()
-        
-    def initialize_system(self):
-        # System initialization
-        pass`,
-                'security.py': `from cryptography.fernet import Fernet
-
-class SecurityModule:
-    def __init__(self):
-        self.key = Fernet.generate_key()
-        self.cipher_suite = Fernet(self.key)
-        
-    def encrypt(self, data):
-        return self.cipher_suite.encrypt(data)`
-            }
+        // Project structure mapping with static file definitions
+        const projectStructure = {
+            'oxidian': ['app.py'],
+            'gateway': ['main.py'],
+            'selena': ['exploit-workbench.tsx', 'home.tsx', 'routes.ts'],
+            'mcp': ['server.ts'],
+            'docutool': ['main.py'],
+            'treadstone': ['core.rs']
         };
 
-        // Initialize Monaco Editor
-        require.config({ paths: { vs: 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.36.1/min/vs' }});
+        // Function to get file content
+        async function fetchFileContent(projectName, fileName) {
+            console.log('Getting content for:', projectName, fileName);
+            try {
+                const response = await fetch(`projects/${projectName}/${fileName}`);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const content = await response.text();
+                return content;
+            } catch (error) {
+                console.error('Error getting file content:', error);
+                return `// Error: ${error.message}\n// File: projects/${projectName}/${fileName}`;
+            }
+        }
+
+        // Initialize Monaco Editor with Python support
+        require.config({ 
+            paths: { 
+                vs: 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.36.1/min/vs',
+            }
+        });
 
         window.MonacoEnvironment = {
             getWorkerUrl: function(workerId, label) {
@@ -274,8 +163,25 @@ class SecurityModule:
             }
         };
 
-        // Initialize editor when Monaco is loaded
+        // Initialize editor when Monaco and languages are loaded
         require(['vs/editor/editor.main'], function() {
+            console.log('Monaco editor loaded');
+            
+            // Register languages if not already registered
+            const languages = ['python', 'typescript'];
+            languages.forEach(lang => {
+                if (!monaco.languages.getLanguages().some(l => l.id === lang)) {
+                    monaco.languages.register({ id: lang });
+                    console.log(`${lang} language registered`);
+                }
+            });
+
+            // Configure TypeScript/TSX support
+            monaco.languages.typescript.typescriptDefaults.setCompilerOptions({
+                jsx: monaco.languages.typescript.JsxEmit.React,
+                target: monaco.languages.typescript.ScriptTarget.Latest,
+                allowNonTsExtensions: true
+            });
             const loading = document.getElementById('loading');
             const editorContainer = document.getElementById('editor-container');
             
@@ -300,6 +206,7 @@ class SecurityModule:
                 loading.style.display = 'none';
                 editorContainer.style.opacity = '1';
                 editorLoaded = true;
+                console.log('Editor initialized successfully');
 
                 // Set up event listeners after editor is initialized
                 setupEventListeners();
@@ -310,51 +217,99 @@ class SecurityModule:
         });
 
         function setupEventListeners() {
+            console.log('Setting up event listeners');
             const projectSelect = document.getElementById('project-select');
             const fileSelector = document.getElementById('file-selector');
-
-            projectSelect.addEventListener('change', function() {
-                const selectedProject = this.value;
-                updateFileSelector(selectedProject);
-            });
-
-            fileSelector.addEventListener('change', function() {
-                const selectedProject = projectSelect.value;
-                const selectedFile = this.value;
-                updateEditor(selectedProject, selectedFile);
-            });
-        }
-
-        function updateFileSelector(projectName) {
-            const fileSelector = document.getElementById('file-selector');
-            fileSelector.innerHTML = '<option value="">Select a File</option>';
             
-            if (projectName && projectFiles[projectName]) {
+            projectSelect.addEventListener('change', async function() {
+                const projectName = this.value;
+                console.log('Project selected:', projectName);
+                
+                // Clear and hide file selector if no project selected
+                if (!projectName) {
+                    fileSelector.style.display = 'none';
+                    fileSelector.innerHTML = '<option value="">Select a file</option>';
+                    if (editor && editorLoaded) {
+                        editor.setValue('// Select a project and file to view the code');
+                    }
+                    return;
+                }
+
+                const files = projectStructure[projectName] || [];
+                console.log('Available files:', files);
+
+                // Update file selector options
+                fileSelector.innerHTML = '<option value="">Select a file</option>' +
+                    files.map(file => `<option value="${file}">${file}</option>`).join('');
+                
+                // Always show file selector when a project is selected
+                fileSelector.style.display = 'block';
                 fileSelector.classList.add('visible');
-                Object.keys(projectFiles[projectName]).forEach(file => {
-                    const option = document.createElement('option');
-                    option.value = file;
-                    option.textContent = file;
-                    fileSelector.appendChild(option);
-                });
-            } else {
-                fileSelector.classList.remove('visible');
-            }
+
+                // Auto-select first file
+                if (files.length > 0) {
+                    console.log('Auto-selecting first file:', files[0]);
+                    fileSelector.value = files[0];
+                    try {
+                        await loadFile(projectName, files[0]);
+                        console.log('File loaded successfully');
+                    } catch (error) {
+                        console.error('Error loading file:', error);
+                    }
+                }
+            });
+
+            fileSelector.addEventListener('change', async function() {
+                const projectName = projectSelect.value;
+                const fileName = this.value;
+                if (projectName && fileName) {
+                    console.log('File selected:', fileName);
+                    await loadFile(projectName, fileName);
+                }
+            });
         }
 
-        function updateEditor(projectName, fileName) {
-            if (!editor || !editorLoaded || !projectName || !fileName) return;
+        async function loadFile(projectName, fileName) {
+            console.log('Loading file:', projectName, fileName);
+            if (editor && editorLoaded) {
+                try {
+                    const content = await fetchFileContent(projectName, fileName);
+                    
+                    const language = fileName.endsWith('.py') ? 'python' :
+                                   fileName.endsWith('.js') ? 'javascript' :
+                                   fileName.endsWith('.rs') ? 'rust' :
+                                   fileName.endsWith('.tsx') ? 'typescript' :
+                                   fileName.endsWith('.ts') ? 'typescript' :
+                                   'plaintext';
 
-            const content = projectFiles[projectName][fileName];
-            if (content) {
-                const language = fileName.endsWith('.rs') ? 'rust' :
-                               fileName.endsWith('.js') ? 'javascript' :
-                               fileName.endsWith('.py') ? 'python' :
-                               fileName.endsWith('.ts') ? 'typescript' :
-                               'plaintext';
-                
-                editor.setValue(content);
-                monaco.editor.setModelLanguage(editor.getModel(), language);
+                    console.log('Setting language to:', language);
+
+                    // Dispose of the old model
+                    const oldModel = editor.getModel();
+                    if (oldModel) {
+                        oldModel.dispose();
+                    }
+
+                    // Create a new model with the content and language
+                    const newModel = monaco.editor.createModel(content, language);
+                    editor.setModel(newModel);
+
+                    // Update editor options for the new language
+                    editor.updateOptions({
+                        readOnly: true,
+                        language: language
+                    });
+
+                    // Force a layout update
+                    editor.layout();
+                    
+                    console.log('Editor updated successfully');
+                } catch (error) {
+                    console.error('Error updating editor:', error);
+                    editor.setValue('// Error loading content');
+                }
+            } else {
+                console.error('Editor not ready:', { editor, editorLoaded });
             }
         }
     </script>
