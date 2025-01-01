@@ -5,33 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Interactive Portfolio</title>
   <style>
-    /* Ensure dat.GUI is visible */
-    .dg.main {
-      position: fixed !important;
-      top: 0 !important;
-      right: 0 !important;
-      z-index: 9999 !important;
-      height: auto !important;
-    }
-    .dg.main .close-button {
-      position: relative !important;
-    }
-    .dg.main .property-name {
-      width: 40% !important;
-    }
-    
-    @keyframes gradientAnimation {
-      0% { background-position: 0% 50%; }
-      50% { background-position: 100% 50%; }
-      100% { background-position: 0% 50%; }
-    }
     html, body {
       margin: 0;
       padding: 0;
       height: 100%;
       overflow: hidden;
       font-family: 'Arial', sans-serif;
-      background: white;
+      background: black;
     }
     #scene-container {
       position: fixed;
@@ -40,6 +20,8 @@
       width: 100%;
       height: 100%;
       z-index: 0;
+      cursor: move;
+      touch-action: none; /* Prevents default touch behaviors */
     }
     .content {
       position: absolute;
@@ -47,13 +29,17 @@
       color: white;
       padding: 2rem;
       max-width: 800px;
-      background: rgb(0, 0, 0);
+      width: calc(100% - 4rem);
+      background: rgba(0, 0, 0, 0.8);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
       border-radius: 10px;
       transition: all 0.3s ease;
       opacity: 0;
       visibility: hidden;
       pointer-events: none;
       transform: translateX(-50%) translateZ(0);
+      box-sizing: border-box;
     }
     .content.active {
       opacity: 1;
@@ -80,21 +66,49 @@
       display: flex;
       gap: 1rem;
       justify-content: center;
+      flex-wrap: wrap;
     }
     .nav button {
       background: rgba(255, 255, 255, 0.1);
       border: 1px solid rgba(255, 255, 255, 0.3);
       color: white;
-      padding: 0.5rem 1rem;
+      padding: 0.8rem 1.5rem;
       border-radius: 5px;
       cursor: pointer;
       transition: all 0.3s ease;
       position: relative;
       z-index: 1001;
+      font-size: 1rem;
+      min-width: 120px;
     }
     .nav button:hover {
       background: rgba(255, 255, 255, 0.2);
       transform: translateY(-2px);
+    }
+    
+    /* Mobile Styles */
+    @media (max-width: 768px) {
+      .content {
+        padding: 1.5rem;
+        width: calc(100% - 2rem);
+        margin: 0 1rem;
+      }
+      .content h1 {
+        font-size: 2rem;
+      }
+      .content p {
+        font-size: 1rem;
+      }
+      .nav button {
+        padding: 12px 20px;
+        width: 100%;
+        margin: 0.25rem 0;
+      }
+      .nav {
+        flex-direction: column;
+        gap: 0.5rem;
+        width: 100%;
+      }
     }
   </style>
 </head>
@@ -102,12 +116,11 @@
   <div id="scene-container"></div>
   <div id="main-content" class="content active" style="top: 20%; left: 50%; transform: translateX(-50%);">
     <h1>Welcome to My Portfolio</h1>
-    <p>Explore my work through this interactive experience. Use the controls in the top-right to customize the wave animation!</p>
+    <p>Explore my work through this interactive experience. Click and drag anywhere to interact with the wave animation!</p>
     <div class="nav">
       <button id="about-btn">About Me</button>
       <button id="projects-btn">Projects</button>
       <button id="contact-btn">Contact</button>
-      
     </div>
   </div>
 
@@ -129,12 +142,10 @@
 
   <script>
     function showSection(sectionId) {
-      // Remove active class from all sections
       document.querySelectorAll('.content').forEach(el => {
         el.classList.remove('active');
       });
 
-      // Add active class to target section
       const targetSection = document.getElementById(sectionId);
       if (targetSection) {
         targetSection.classList.add('active');
@@ -146,7 +157,6 @@
       const projectsBtn = document.getElementById('projects-btn');
       const contactBtn = document.getElementById('contact-btn');
 
-      // Add back buttons to each section
       ['about', 'projects', 'contact'].forEach(sectionId => {
         const section = document.getElementById(sectionId);
         if (section) {
@@ -167,315 +177,222 @@
   </script>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/dat.gui@0.7.7/build/dat.gui.min.js"></script>
   <script>
     // Initialize Three.js scene
     const container = document.getElementById('scene-container');
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-    const textureLoader = new THREE.TextureLoader();
+    const clock = new THREE.Clock();
     
-    // Create GUI with specific configuration
-    const gui = new dat.GUI({
-      width: 300,
-      autoPlace: true,
-      closed: false
-    });
-
     // Setup renderer
     renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.physicallyCorrectLights = true;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.5;
     container.appendChild(renderer.domElement);
     
     // Add lighting
-    const ambientLight = new THREE.AmbientLight(0x404040);
+    const ambientLight = new THREE.AmbientLight(0x404040, 0.4);
     scene.add(ambientLight);
-    const pointLight = new THREE.PointLight(0xffffff, 1, 100);
+    
+    const pointLight = new THREE.PointLight(0xffffff, 2.9, 100);
     pointLight.position.set(5, 5, 5);
     scene.add(pointLight);
     
+    const pointLight2 = new THREE.PointLight(0xffffff, 0.7, 100);
+    pointLight2.position.set(-5, 3, -5);
+    scene.add(pointLight2);
+    
     // Create wave surface
-    const waveGeometry = new THREE.PlaneGeometry(20, 20, 128, 128);
-    const waveMaterial = new THREE.MeshPhongMaterial({
-      color: 0x00aaff,
-      wireframe: false,
-      flatShading: true,
-      side: THREE.DoubleSide
+    const waveGeometry = new THREE.PlaneGeometry(20, 20, 
+      // Reduce segments on mobile for better performance
+      window.innerWidth < 768 ? 64 : 128, 
+      window.innerWidth < 768 ? 64 : 128
+    );
+    const waveMaterial = new THREE.MeshPhysicalMaterial({
+      color: 0xffffff,
+      wireframe: true,
+      side: THREE.DoubleSide,
+      metalness: 0.14,
+      roughness: 0.34,
+      reflectivity: 0.83,
+      clearcoat: 1.0,
+      clearcoatRoughness: 0.1
     });
     
     const waveMesh = new THREE.Mesh(waveGeometry, waveMaterial);
     waveMesh.rotation.x = -Math.PI / 2;
+    waveMesh.scale.set(2.1, 1.7, 1);
     scene.add(waveMesh);
     camera.position.set(0, 5, 15);
     camera.lookAt(0, 0, 0);
-    
-    // Presets
-    const presets = {
-      'Default': {
-        amplitude: 1.0,
-        frequency: 1.0,
-        speed: 1.0,
-        color: '#00aaff',
-        scaleX: 1.0,
-        scaleY: 1.0,
-        scaleZ: 1.0,
-        wireframe: false,
-        lightIntensity: 1.0,
-        patternType: 'sine',
-        repetitions: 1,
-        directionX: 1.0,
-        directionY: 1.0,
-        noiseLevel: 0.0,
-        textureEnabled: false
-      },
-      'Poly Wave': {
-        amplitude: 0.5,
-        frequency: 5.0,
-        speed: 2.1,
-        color: '#ff0000',
-        scaleX: 3.0,
-        scaleY: 2.8,
-        scaleZ: 2.7,
-        wireframe: false,
-        lightIntensity: 1.8,
-        patternType: 'sine',
-        repetitions: 10,
-        directionX: 1.0,
-        directionY: 1.0,
-        noiseLevel: 0.0,
-        textureEnabled: true
-      },
-      'Crystal Peaks': {
-        amplitude: 2.0,
-        frequency: 3.0,
-        speed: 1.5,
-        color: '#4facfe',
-        scaleX: 2.5,
-        scaleY: 2.5,
-        scaleZ: 3.0,
-        wireframe: true,
-        lightIntensity: 2.0,
-        patternType: 'combined',
-        repetitions: 8,
-        directionX: 0.8,
-        directionY: -0.8,
-        noiseLevel: 0.2,
-        textureEnabled: false
-      },
-      'Neon Pulse': {
-        amplitude: 1.2,
-        frequency: 4.0,
-        speed: 3.0,
-        color: '#00ff88',
-        scaleX: 2.0,
-        scaleY: 2.0,
-        scaleZ: 1.5,
-        wireframe: false,
-        lightIntensity: 1.5,
-        patternType: 'cosine',
-        repetitions: 6,
-        directionX: 1.0,
-        directionY: -1.0,
-        noiseLevel: 0.0,
-        textureEnabled: true
-      },
-      'Desert Dunes': {
-        amplitude: 0.8,
-        frequency: 2.0,
-        speed: 0.5,
-        color: '#ffd700',
-        scaleX: 3.0,
-        scaleY: 3.0,
-        scaleZ: 2.0,
-        wireframe: false,
-        lightIntensity: 1.2,
-        patternType: 'sine',
-        repetitions: 4,
-        directionX: 0.5,
-        directionY: 0.5,
-        noiseLevel: 0.1,
-        textureEnabled: true
-      },
-      'Digital Matrix': {
-        amplitude: 1.5,
-        frequency: 6.0,
-        speed: 2.5,
-        color: '#00ff00',
-        scaleX: 2.2,
-        scaleY: 2.2,
-        scaleZ: 2.0,
-        wireframe: true,
-        lightIntensity: 1.6,
-        patternType: 'combined',
-        repetitions: 12,
-        directionX: -1.0,
-        directionY: 1.0,
-        noiseLevel: 0.15,
-        textureEnabled: false
-      }
+
+    // Wave parameters - adjusted for mobile
+    const waveParams = {
+      amplitude: window.innerWidth < 768 ? 1.8 : 2.3,
+      frequency: window.innerWidth < 768 ? 2.5 : 3.5,
+      speed: window.innerWidth < 768 ? 0.35 : 0.44,
+      repetitions: window.innerWidth < 768 ? 4 : 6,
+      mouseX: 0,
+      mouseY: 0,
+      isInteracting: false,
+      interactionStrength: 0
     };
 
-    // Wave controls (initialize with default preset)
-    const waveControls = { ...presets['Default'] };
-    
-    // Setup GUI controls
-    const waveFolder = gui.addFolder('Wave Controls');
-    
-    // Function to apply preset
-    function applyPreset(presetName) {
-      const preset = presets[presetName];
-      Object.keys(preset).forEach(key => {
-        if (waveControls[key] !== undefined) {
-          waveControls[key] = preset[key];
-          // Apply immediate changes for visual properties
-          switch(key) {
-            case 'color':
-              waveMaterial.color.set(preset[key]);
-              break;
-            case 'scaleX':
-              waveMesh.scale.x = preset[key];
-              break;
-            case 'scaleY':
-              waveMesh.scale.y = preset[key];
-              break;
-            case 'scaleZ':
-              waveMesh.scale.z = preset[key];
-              break;
-            case 'wireframe':
-              waveMaterial.wireframe = preset[key];
-              break;
-            case 'lightIntensity':
-              pointLight.intensity = preset[key];
-              break;
-            case 'textureEnabled':
-              if (preset[key]) {
-                textureLoader.load('https://threejs.org/examples/textures/water.jpg', (texture) => {
-                  waveMaterial.map = texture;
-                  waveMaterial.needsUpdate = true;
-                });
-              } else {
-                waveMaterial.map = null;
-                waveMaterial.needsUpdate = true;
-              }
-              break;
-          }
-        }
-      });
+    // Mouse/Touch interaction
+    let mouseX = 0;
+    let mouseY = 0;
+    let targetX = 0;
+    let targetY = 0;
+    let lastTouchTime = 0;
+
+    function onMouseMove(event) {
+      if (!waveParams.isInteracting) return;
       
-      // Update all GUI controllers
-      waveFolder.__controllers.forEach(controller => {
-        if (preset[controller.property] !== undefined) {
-          controller.setValue(preset[controller.property]);
-        }
-      });
+      mouseX = (event.clientX / window.innerWidth) * 2 - 1;
+      mouseY = -(event.clientY / window.innerHeight) * 2 + 1;
     }
 
-    // Add presets dropdown to wave folder
-    const presetsController = waveFolder.add({ preset: 'Default' }, 'preset', Object.keys(presets))
-      .name('Presets')
-      .onChange(applyPreset);
-    waveFolder.add(waveControls, 'amplitude', 0.1, 5.0).name('Amplitude');
-    waveFolder.add(waveControls, 'frequency', 0.1, 5.0).name('Frequency');
-    waveFolder.add(waveControls, 'speed', 0.1, 5.0).name('Speed');
-    waveFolder.addColor(waveControls, 'color').name('Color').onChange(value => {
-      waveMaterial.color.set(value);
-    });
-    waveFolder.add(waveControls, 'scaleX', 0.5, 3.0).name('Scale X').onChange(value => {
-      waveMesh.scale.x = value;
-    });
-    waveFolder.add(waveControls, 'scaleY', 0.5, 3.0).name('Scale Y').onChange(value => {
-      waveMesh.scale.y = value;
-    });
-    waveFolder.add(waveControls, 'scaleZ', 0.5, 3.0).name('Scale Z').onChange(value => {
-      waveMesh.scale.z = value;
-    });
-    waveFolder.add(waveControls, 'wireframe').name('Wireframe').onChange(value => {
-      waveMaterial.wireframe = value;
-    });
-    waveFolder.add(waveControls, 'lightIntensity', 0.1, 2.0).name('Light Intensity').onChange(value => {
-      pointLight.intensity = value;
-    });
-    waveFolder.add(waveControls, 'patternType', ['sine', 'cosine', 'combined']).name('Pattern Type');
-    waveFolder.add(waveControls, 'repetitions', 1, 10, 1).name('Repetitions');
-    waveFolder.add(waveControls, 'directionX', -1.0, 1.0).name('Direction X');
-    waveFolder.add(waveControls, 'directionY', -1.0, 1.0).name('Direction Y');
-    waveFolder.add(waveControls, 'noiseLevel', 0.0, 1.0).name('Noise Level');
-    waveFolder.add(waveControls, 'textureEnabled').name('Texture').onChange(value => {
-      if (value) {
-        textureLoader.load('https://threejs.org/examples/textures/water.jpg', (texture) => {
-          waveMaterial.map = texture;
-          waveMaterial.needsUpdate = true;
-        });
-      } else {
-        waveMaterial.map = null;
-        waveMaterial.needsUpdate = true;
+    function onTouchMove(event) {
+      if (!waveParams.isInteracting) return;
+      event.preventDefault();
+      
+      // Adjust touch sensitivity for mobile
+      const touch = event.touches[0];
+      const now = Date.now();
+      
+      // Throttle touch events for better performance
+      if (now - lastTouchTime > 16) { // ~60fps
+        mouseX = (touch.clientX / window.innerWidth) * 2 - 1;
+        mouseY = -(touch.clientY / window.innerHeight) * 2 + 1;
+        lastTouchTime = now;
       }
+    }
+
+    container.addEventListener('mousedown', () => {
+      waveParams.isInteracting = true;
     });
-    waveFolder.open();
+    container.addEventListener('mouseup', () => {
+      waveParams.isInteracting = false;
+    });
+    container.addEventListener('mousemove', onMouseMove);
     
-    // Initialize wave surface vertices
-    const positions = waveGeometry.attributes.position.array;
-    const originalPositions = new Float32Array(positions);
+    container.addEventListener('touchstart', () => {
+      waveParams.isInteracting = true;
+    });
+    container.addEventListener('touchend', () => {
+      waveParams.isInteracting = false;
+    });
+    container.addEventListener('touchmove', onTouchMove);
+    
+    // Handle window resize with performance optimization
+    let resizeTimeout;
+    let positions = waveGeometry.attributes.position.array;
+    let originalPositions = new Float32Array(positions.length);
+    
+    // Initialize originalPositions
     for (let i = 0; i < positions.length; i += 3) {
       originalPositions[i] = positions[i];
       originalPositions[i + 1] = positions[i + 1];
       originalPositions[i + 2] = positions[i + 2];
     }
 
-    // Animation
-    const clock = new THREE.Clock();
+    window.addEventListener('resize', () => {
+      // Debounce resize events
+      clearTimeout(resizeTimeout);
+      resizeTimeout = setTimeout(() => {
+        const isMobile = window.innerWidth < 768;
+        
+        // Update camera
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        
+        // Update wave parameters for new screen size
+        waveParams.amplitude = isMobile ? 1.8 : 2.3;
+        waveParams.frequency = isMobile ? 2.5 : 3.5;
+        waveParams.speed = isMobile ? 0.35 : 0.44;
+        waveParams.repetitions = isMobile ? 4 : 6;
+        
+        // Regenerate geometry with appropriate detail level
+        const newGeometry = new THREE.PlaneGeometry(20, 20, 
+          isMobile ? 64 : 128, 
+          isMobile ? 64 : 128
+        );
+        
+        // Clean up old geometry
+        waveMesh.geometry.dispose();
+        waveMesh.geometry = newGeometry;
+        
+        // Update position arrays references
+        positions = newGeometry.attributes.position.array;
+        originalPositions = new Float32Array(positions.length);
+        
+        // Initialize new positions
+        for (let i = 0; i < positions.length; i += 3) {
+          originalPositions[i] = positions[i];
+          originalPositions[i + 1] = positions[i + 1];
+          originalPositions[i + 2] = positions[i + 2];
+        }
+        
+        // Reset interaction state
+        waveParams.isInteracting = false;
+        waveParams.interactionStrength = 0;
+        mouseX = 0;
+        mouseY = 0;
+        targetX = 0;
+        targetY = 0;
+      }, 250); // Wait for 250ms after last resize event
+    });
     
+    // Animation loop
     function animate() {
       requestAnimationFrame(animate);
       
-      const time = clock.getElapsedTime() * waveControls.speed;
+      const time = clock.getElapsedTime() * waveParams.speed;
       
+      // Smooth mouse movement
+      targetX += (mouseX - targetX) * 0.05;
+      targetY += (mouseY - targetY) * 0.05;
+
+      // Smooth interaction strength
+      const targetStrength = waveParams.isInteracting ? 1 : 0;
+      waveParams.interactionStrength += (targetStrength - waveParams.interactionStrength) * 0.1;
+      
+      // Update wave vertices
       for (let i = 0; i < positions.length; i += 3) {
         const x = originalPositions[i];
         const y = originalPositions[i + 1];
         
-        const waveX = x / waveGeometry.parameters.widthSegments * Math.PI * 2 * waveControls.repetitions;
-        const waveY = y / waveGeometry.parameters.heightSegments * Math.PI * 2 * waveControls.repetitions;
+        const waveX = x / waveMesh.geometry.parameters.widthSegments * Math.PI * 2 * waveParams.repetitions;
+        const waveY = y / waveMesh.geometry.parameters.heightSegments * Math.PI * 2 * waveParams.repetitions;
         
-        let waveValue;
-        switch(waveControls.patternType) {
-          case 'sine':
-            waveValue = Math.sin(waveX * waveControls.frequency * waveControls.directionX + 
-                               waveY * waveControls.frequency * waveControls.directionY + time);
-            break;
-          case 'cosine':
-            waveValue = Math.cos(waveX * waveControls.frequency * waveControls.directionX + 
-                               waveY * waveControls.frequency * waveControls.directionY + time);
-            break;
-          case 'combined':
-            waveValue = Math.sin(waveX * waveControls.frequency * waveControls.directionX + time) * 
-                       Math.cos(waveY * waveControls.frequency * waveControls.directionY + time);
-            break;
-        }
+        // Interactive wave pattern
+        const distanceX = Math.abs(x / 10 - targetX);
+        const distanceY = Math.abs(y / 10 - targetY);
+        const distance = Math.sqrt(distanceX * distanceX + distanceY * distanceY);
         
-        const noise = waveControls.noiseLevel > 0 ? 
-          (Math.random() - 0.5) * waveControls.noiseLevel : 0;
+        const waveValue = Math.sin(waveX * waveParams.frequency + time) * 
+                         Math.cos(waveY * waveParams.frequency + time);
         
-        positions[i + 2] = originalPositions[i + 2] + waveValue * waveControls.amplitude + noise;
+        const interactiveWave = Math.sin(distance * 5 + time * 2) * 
+                               (1 - Math.min(distance, 1)) * 
+                               waveParams.interactionStrength;
+        
+        positions[i + 2] = originalPositions[i + 2] + 
+                          waveValue * waveParams.amplitude + 
+                          interactiveWave * waveParams.amplitude * 2;
       }
       
-      waveGeometry.attributes.position.needsUpdate = true;
-      waveGeometry.computeVertexNormals();
-      
-      camera.position.z = 15 + waveControls.amplitude * 2;
-      camera.lookAt(0, 0, 0);
+      waveMesh.geometry.attributes.position.needsUpdate = true;
+      waveMesh.geometry.computeVertexNormals();
       
       renderer.render(scene, camera);
     }
 
+    // Start the animation
     animate();
-    
-    // Handle window resize
-    window.addEventListener('resize', () => {
-      camera.aspect = window.innerWidth / window.innerHeight;
-      camera.updateProjectionMatrix();
-      renderer.setSize(window.innerWidth, window.innerHeight);
-    });
   </script>
 </body>
 </html>
