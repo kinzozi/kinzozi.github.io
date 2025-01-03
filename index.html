@@ -11,7 +11,7 @@
       height: 100%;
       overflow: hidden;
       font-family: 'Arial', sans-serif;
-      background: black;
+      background: rgb(0, 0, 0);
     }
     #scene-container {
       position: fixed;
@@ -185,6 +185,9 @@
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     const clock = new THREE.Clock();
     
+    // Device detection
+    const isMobile = window.innerWidth < 768;
+    
     // Setup renderer
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.physicallyCorrectLights = true;
@@ -193,14 +196,14 @@
     container.appendChild(renderer.domElement);
     
     // Add lighting
-    const ambientLight = new THREE.AmbientLight(0x404040, 0.4);
+    const ambientLight = new THREE.AmbientLight(0x404040, isMobile ? 0.8 : 0.4);
     scene.add(ambientLight);
     
-    const pointLight = new THREE.PointLight(0xffffff, 2.9, 100);
+    const pointLight = new THREE.PointLight(0xffffff, isMobile ? 3.5 : 2.9, 100);
     pointLight.position.set(5, 5, 5);
     scene.add(pointLight);
     
-    const pointLight2 = new THREE.PointLight(0xffffff, 0.7, 100);
+    const pointLight2 = new THREE.PointLight(0xffffff, isMobile ? 1.2 : 0.7, 100);
     pointLight2.position.set(-5, 3, -5);
     scene.add(pointLight2);
     
@@ -214,10 +217,10 @@
       color: 0xffffff,
       wireframe: true,
       side: THREE.DoubleSide,
-      metalness: 0.14,
-      roughness: 0.34,
-      reflectivity: 0.83,
-      clearcoat: 1.0,
+      metalness: isMobile ? 0.08 : 0.14,
+      roughness: isMobile ? 0.2 : 0.34,
+      reflectivity: isMobile ? 0.9 : 0.83,
+      clearcoat: isMobile ? 1.2 : 1.0,
       clearcoatRoughness: 0.1
     });
     
@@ -225,7 +228,15 @@
     waveMesh.rotation.x = -Math.PI / 2;
     waveMesh.scale.set(2.1, 1.7, 1);
     scene.add(waveMesh);
-    camera.position.set(0, 5, 15);
+
+    // Set initial position based on device
+    if (isMobile) {
+      camera.position.set(0, 8, 20);
+      waveMesh.position.set(0, -3, 0);
+    } else {
+      camera.position.set(0, 5, 15);
+      waveMesh.position.set(0, 0, 0);
+    }
     camera.lookAt(0, 0, 0);
 
     // Wave parameters - adjusted for mobile
@@ -308,6 +319,34 @@
         camera.aspect = window.innerWidth / window.innerHeight;
         camera.updateProjectionMatrix();
         renderer.setSize(window.innerWidth, window.innerHeight);
+        
+        // Update camera and wave positions for mobile/desktop
+        if (isMobile) {
+          camera.position.set(0, 8, 20);
+          waveMesh.position.set(0, -3, 0);
+          // Update lighting for mobile
+          ambientLight.intensity = 0.8;
+          pointLight.intensity = 3.5;
+          pointLight2.intensity = 1.2;
+          // Update material properties for mobile
+          waveMaterial.metalness = 0.08;
+          waveMaterial.roughness = 0.2;
+          waveMaterial.reflectivity = 0.9;
+          waveMaterial.clearcoat = 1.2;
+        } else {
+          camera.position.set(0, 5, 15);
+          waveMesh.position.set(0, 0, 0);
+          // Reset lighting for desktop
+          ambientLight.intensity = 0.4;
+          pointLight.intensity = 2.9;
+          pointLight2.intensity = 0.7;
+          // Reset material properties for desktop
+          waveMaterial.metalness = 0.14;
+          waveMaterial.roughness = 0.34;
+          waveMaterial.reflectivity = 0.83;
+          waveMaterial.clearcoat = 1.0;
+        }
+        camera.lookAt(0, 0, 0);
         
         // Update wave parameters for new screen size
         waveParams.amplitude = isMobile ? 1.8 : 2.3;
