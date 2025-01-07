@@ -1,3 +1,12 @@
+'''
+Gateway LLM API
+
+This is a LLM API that allows you to generate text using a custom model. 
+Please use your Hugging Face API key to generate text within the Gateway LLM API interface. 
+I will not be responsible for any actions you take with this program.
+
+'''
+
 from fastapi import FastAPI, HTTPException, Header, Depends, Request
 from fastapi.security import APIKeyHeader
 from fastapi.responses import JSONResponse

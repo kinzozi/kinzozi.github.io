@@ -101,9 +101,7 @@
                 <option value="oxidian">Oxidian SecureSearch</option>
                 <option value="gateway">Gateway LLM API</option>
                 <option value="selena">Selena Oracle</option>
-                <option value="mcp">MCP Servers</option>
-                <option value="docutool">DocuTool</option>
-                <option value="treadstone">Treadstone</option>
+                <option value="Atomik">Atomik</option>
             </select>
             <select id="file-selector">
                 <option value="">Select a file</option>
@@ -116,24 +114,21 @@
     </div>
 
     <script>
-        let editor = null;
-        let editorLoaded = false;
+
 
         // Project structure mapping with static file definitions
         const projectStructure = {
             'oxidian': ['app.py'],
             'gateway': ['main.py'],
             'selena': ['exploit-workbench.tsx', 'home.tsx', 'routes.ts'],
-            'mcp': ['server.ts'],
-            'docutool': ['main.py'],
-            'treadstone': ['core.rs']
+            'Atomik': ['main.py']
         };
 
         // Function to get file content
         async function fetchFileContent(projectName, fileName) {
             console.log('Getting content for:', projectName, fileName);
             try {
-                const response = await fetch(`projects/${projectName}/${fileName}`);
+                const response = await fetch(`/projects/${projectName}/${fileName}`);
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }

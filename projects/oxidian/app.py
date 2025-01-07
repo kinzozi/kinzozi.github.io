@@ -1,3 +1,12 @@
+'''
+Oxidian SecureSearch
+
+This is a threat hunting intelligence feed that allows you to search for devices on the internet using the Shodan API. 
+Please use your Shodan API key to search for devices within the Shodan API interface. 
+I will not be responsible for any actions you take with this program.
+
+'''
+
 import streamlit as st
 import shodan
 import os
